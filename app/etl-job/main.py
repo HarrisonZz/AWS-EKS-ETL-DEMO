@@ -1,7 +1,5 @@
 import duckdb
 import logging
-import boto3
-from botocore.exceptions import ClientError
 from datetime import datetime, timezone
 import os
 from dataclasses import dataclass
@@ -16,13 +14,14 @@ class ETLConfig:
     process_date: str
     # DevOps 關鍵細節：限制記憶體使用量，模擬在 K8s Pod 運作的情境
     memory_limit: str = "512MB" 
-    threads: int = 4
+    threads: int = 2
 
 class DuckDBPipeline:
     def __init__(self, config: ETLConfig):
         self.config = config
         # 初始化 DuckDB 連線 (In-memory mode)
         self.con = duckdb.connect(config={'memory_limit': config.memory_limit})
+        self.con.execute(f"SET threads={config.threads};")
         self._setup_aws_auth()
 
     def _setup_aws_auth(self):
@@ -48,7 +47,7 @@ class DuckDBPipeline:
         logger.info(f"🚀 Starting DuckDB ETL for date: {self.config.process_date}")
         
         input_path = f"s3://{self.config.s3_bucket}/raw/{self.config.process_date}/*.jsonl"
-        output_path = f"s3://{self.config.s3_bucket}/curated/agg-{self.config.process_date}.jsonl"
+        output_path = f"s3://{self.config.s3_bucket}/curated/{self.config.process_date}/agg-{self.config.process_date}.jsonl"
 
         # 這裡的 SQL 邏輯：
         # 1. read_json_auto: 自動推斷 Schema 讀取 S3
@@ -91,9 +90,12 @@ class DuckDBPipeline:
 if __name__ == "__main__":
 
     today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    bucket = os.getenv("S3_BUCKET")
+    if not bucket:
+        raise RuntimeError("S3_BUCKET is required")
     config = ETLConfig(
-        s3_bucket=os.getenv("S3_BUCKET", "cloud-native-etl-data-dev"),
-        process_date=os.getenv("PROCESS_DATE", today_str)
+        s3_bucket=bucket,
+        process_date=os.getenv("PROCESS_DATE", today_str),
     )
     
     pipeline = DuckDBPipeline(config)
