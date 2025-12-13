@@ -16,8 +16,8 @@ resource "aws_s3_bucket" "data" {
 
 resource "aws_s3_object" "raw_prefix_placeholder" {
   bucket  = aws_s3_bucket.data.id
-  key     = "raw/" # 注意最後有斜線，Console 會顯示成資料夾
-  content = ""     # 空內容即可
+  key     = "raw/"
+  content = ""
 
   depends_on = [aws_s3_bucket.data]
 }
