@@ -15,14 +15,23 @@ class ETLConfig:
     # DevOps 關鍵細節：限制記憶體使用量，模擬在 K8s Pod 運作的情境
     memory_limit: str = "512MB" 
     threads: int = 2
+    # 新增：指定暫存目錄，避免塞爆容器 Root FS
+    temp_dir: str = "/tmp/duckdb_spill"
 
 class DuckDBPipeline:
     def __init__(self, config: ETLConfig):
         self.config = config
         # 初始化 DuckDB 連線 (In-memory mode)
-        self.con = duckdb.connect(config={'memory_limit': config.memory_limit})
+        self.con = duckdb.connect(config={
+            'memory_limit': config.memory_limit,
+            'threads': config.threads,
+            'temp_directory': config.temp_dir
+        })
         self.con.execute(f"SET threads={config.threads};")
         self._setup_aws_auth()
+
+    def _ensure_temp_dir(self):
+        os.makedirs(self.config.temp_dir, exist_ok=True)
 
     def _setup_aws_auth(self):
         """
@@ -47,7 +56,7 @@ class DuckDBPipeline:
         logger.info(f"🚀 Starting DuckDB ETL for date: {self.config.process_date}")
         
         input_path = f"s3://{self.config.s3_bucket}/raw/{self.config.process_date}/*.jsonl"
-        output_path = f"s3://{self.config.s3_bucket}/curated/{self.config.process_date}/agg-{self.config.process_date}.jsonl"
+        output_path = f"s3://{self.config.s3_bucket}/curated/{self.config.process_date}/agg-{self.config.process_date}.parquet"
 
         # 這裡的 SQL 邏輯：
         # 1. read_json_auto: 自動推斷 Schema 讀取 S3
@@ -59,27 +68,29 @@ class DuckDBPipeline:
         COPY (
             SELECT 
                 device_id,
-                '{self.config.process_date}' AS date,
+                '{self.config.process_date}'::DATE AS date,
                 COUNT(*) AS count,
                 ROUND(AVG(value), 2) AS avg,
                 MIN(value) AS min,
                 MAX(value) AS max,
                 now() AS processed_at
-            FROM read_json_auto('{input_path}')
+            FROM read_json_auto('{input_path}', format='newline_delimited')
             WHERE value >= 0 
             GROUP BY device_id
-
             ORDER BY device_id ASC
-        ) TO '{output_path}' (FORMAT JSON);
+        ) TO '{output_path}' (FORMAT 'PARQUET', CODEC 'SNAPPY');
         """
 
         try:
             logger.info("⏳ Executing aggregation query...")
             self.con.execute(query)
             logger.info(f"✅ ETL Job Completed! Output saved to: {output_path}")
-            
-            # (Optional) 可以在這裡做簡單的驗證，秀一下成果
-            result_preview = self.con.execute(f"SELECT * FROM read_json_auto('{output_path}') USING SAMPLE 3 ROWS").fetchall()
+
+            preview_query = f"""
+                SELECT * FROM read_parquet('{output_path}') 
+                USING SAMPLE 5 ROWS
+            """
+            result_preview = self.con.execute(preview_query).fetchall()
             logger.info(f"👀 Result Preview: {result_preview}")
 
         except Exception as e:
@@ -96,6 +107,7 @@ if __name__ == "__main__":
     config = ETLConfig(
         s3_bucket=bucket,
         process_date=os.getenv("PROCESS_DATE", today_str),
+        memory_limit=os.getenv("DUCKDB_MEMORY_LIMIT", "512MB")
     )
     
     pipeline = DuckDBPipeline(config)
