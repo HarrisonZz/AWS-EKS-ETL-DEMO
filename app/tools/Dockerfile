@@ -7,6 +7,8 @@ FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
+ENV API_URL="http://localhost:8000/metrics"
+
 # 3. 設定工作目錄
 WORKDIR /app
 
