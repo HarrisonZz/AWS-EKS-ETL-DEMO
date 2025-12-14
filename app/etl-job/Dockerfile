@@ -18,4 +18,4 @@ COPY . .
 
 # 4. 設定啟動指令
 # 因為是 Job，跑完就會自己 Exit，這是正常的
-CMD ["python", "etl_job.py"]
+CMD ["python", "main.py"]
