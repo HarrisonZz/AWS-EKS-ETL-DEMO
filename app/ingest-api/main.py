@@ -7,7 +7,7 @@ from typing import Optional, List
 import boto3
 from botocore.config import Config
 from fastapi import FastAPI, HTTPException
-from pydantic import Field
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -19,9 +19,6 @@ class Settings(BaseSettings):
         env_prefix="",  
         case_sensitive=False # 允許 aws_region 對應 AWS_REGION
     )
-
-    class Config:
-        allow_population_by_field_name = True
 
 try:
     settings = Settings()
