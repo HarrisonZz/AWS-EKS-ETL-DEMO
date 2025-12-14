@@ -4,3 +4,6 @@ variable "project_name" {
 variable "env" {
   type = string
 }
+variable "iam_user_name" {
+  type = string
+}

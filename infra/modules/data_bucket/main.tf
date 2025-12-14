@@ -16,6 +16,34 @@ resource "aws_s3_bucket" "data" {
   tags = local.common_tags
 }
 
+resource "aws_iam_user" "ingest_user" {
+  name = var.iam_user_name
+}
+
+resource "aws_iam_access_key" "ingest_user_key" {
+  user = aws_iam_user.ingest_user.name
+}
+
+data "aws_iam_policy_document" "ingest_policy_doc" {
+  statement {
+    sid    = "AllowWriteToIngestBucket"
+    effect = "Allow"
+    actions = [
+      "s3:PutObject",
+      "s3:AbortMultipartUpload"
+    ]
+    resources = [
+      "${aws_s3_bucket.data.arn}/*"
+    ]
+  }
+}
+
+resource "aws_iam_user_policy" "ingest_user_key_attach" {
+  name   = "ingest-local-write-policy"
+  user   = aws_iam_user.ingest_user.name
+  policy = data.aws_iam_policy_document.ingest_policy_doc.json
+}
+
 resource "aws_s3_object" "raw_prefix_placeholder" {
   bucket  = aws_s3_bucket.data.id
   key     = "raw/"
