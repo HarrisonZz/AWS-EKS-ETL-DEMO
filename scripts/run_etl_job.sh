@@ -4,9 +4,9 @@ set -e # 遇到錯誤立即停止
 # --- 1. 設定變數與路徑 ---
 # 假設 infra 資料夾在往上兩層的 infra (app/etl/ -> app/ -> root -> infra)
 # 您可以根據實際位置調整 "../.."
-TF_DIR="./infra/stacks/eks"
-IMAGE_NAME="etl-job:v1"
-CONTAINER_NAME="etl-job-runner"
+TF_DIR="../infra/stacks/eks"
+IMAGE_NAME="etl-worker:v1"
+CONTAINER_NAME="etl-worker-runner"
 # 預設跑今天的日期 (UTC)，也可以透過參數傳入: ./run_etl.sh 2025-12-13
 PROCESS_DATE=${1:-$(date -u +%Y-%m-%d)}
 
