@@ -45,3 +45,8 @@ output "etl_cleaning_ksa_name" {
   description = "K8s Service Account name for ETL Cleaning Job"
   value       = module.etl_identity.ksa_name
 }
+
+output "etl_cleaning_gsa_email" {
+  description = "GCP Service Account email for ETL Cleaning Job"
+  value       = module.etl_identity.gsa_email
+}
