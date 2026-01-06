@@ -15,13 +15,6 @@ resource "google_container_cluster" "primary" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
-  node_config {
-    disk_size_gb = 30
-    disk_type    = "pd-standard"
-    machine_type = "e2-medium"
-    oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
-  }
-
   network    = var.network_name
   subnetwork = var.subnetwork_name
 
@@ -54,6 +47,10 @@ resource "google_container_cluster" "primary" {
   depends_on = [
     google_project_service.container
   ]
+
+  lifecycle {
+    ignore_changes = [initial_node_count]
+  }
 }
 
 # 2. 專用的 Service Account (給 Node 使用，最小權限原則)
@@ -108,4 +105,5 @@ resource "google_container_node_pool" "primary_nodes" {
     disk_size_gb = 50
     disk_type    = "pd-standard"
   }
+
 }
