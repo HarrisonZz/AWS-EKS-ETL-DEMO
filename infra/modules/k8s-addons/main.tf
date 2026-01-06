@@ -1,6 +1,6 @@
 # --- 1. Namespaces (只留 bootstrap 需要的) ---
 resource "kubernetes_namespace_v1" "namespaces" {
-  for_each = toset(["argocd", "ingress-nginx"])
+  for_each = toset(["argocd", "ingress-nginx", "monitoring"])
   metadata {
     name = each.key
   }
@@ -69,4 +69,28 @@ resource "kubernetes_ingress_v1" "argocd_server" {
   }
 
   depends_on = [helm_release.argocd]
+}
+
+resource "helm_release" "external_secrets" {
+  name             = "external-secrets"
+  repository       = "https://charts.external-secrets.io"
+  chart            = "external-secrets"
+  namespace        = "external-secrets"
+  create_namespace = true
+  wait             = true
+
+  values = [yamlencode({
+    installCRDs = true
+  })]
+}
+
+resource "kubernetes_service_account_v1" "monitoring_secrets_sa" {
+  metadata {
+    name      = "monitoring-secrets-sa"
+    namespace = "monitoring"
+    annotations = {
+      "iam.gke.io/gcp-service-account" = var.monitoring_secrets_gcp_sa_email
+    }
+  }
+  depends_on = [helm_release.external_secrets]
 }

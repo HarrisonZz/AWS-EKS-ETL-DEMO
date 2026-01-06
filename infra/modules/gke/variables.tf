@@ -44,3 +44,9 @@ variable "spot_instance" {
   type        = bool
   default     = false
 }
+
+variable "secret_id" {
+  description = "Grafana secret"
+  type        = string
+  default     = "grafana-admin"
+}
