@@ -50,3 +50,7 @@ output "etl_cleaning_gsa_email" {
   description = "GCP Service Account email for ETL Cleaning Job"
   value       = module.etl_identity.gsa_email
 }
+
+output "monitoring_secrets_gcp_sa_email" {
+  value = module.etl_identity.monitoring_secrets_gcp_sa_email
+}
