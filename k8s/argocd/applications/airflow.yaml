@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: airflow
+  namespace: argocd
+spec:
+  project: platform
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: airflow
+  sources:
+    - repoURL: https://airflow.apache.org
+      chart: airflow
+      targetRevision: 1.11.0
+      helm:
+        valueFiles:
+          - $values/k8s/values/airflow/base.yaml
+          - $values/k8s/values/airflow/dev.yaml
+          - $values/k8s/env/dev/airflow.auto-values.yaml   # ← Terraform handoff
+    - repoURL: https://github.com/<you>/<repo>.git
+      targetRevision: main
+      ref: values
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
