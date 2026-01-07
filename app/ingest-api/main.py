@@ -79,8 +79,7 @@ def ingest_metrics(payload: MetricsPayload):
     time_str = now_utc.strftime("%Y%m%dT%H%M%SZ")   # ISO Compact
     unique_id = uuid.uuid4().hex[:8]
 
-    # GCS Object Name: raw/2025-12-13/metrics-20251213T120000Z-abcdef01.jsonl
-    key = f"{settings.gcs_prefix}/{date_str}/metrics-{time_str}-{unique_id}.jsonl"
+    key = f"{settings.gcs_prefix}/dt={date_str}/metrics-{time_str}-{unique_id}.jsonl"
 
     # 組 JSONL 內容 (邏輯不變)
     lines = []
