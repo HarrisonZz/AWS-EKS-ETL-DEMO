@@ -15,3 +15,8 @@ output "cluster_ca_certificate" {
 output "location" {
   value = google_container_cluster.primary.location
 }
+
+output "node_service_account_email" {
+  description = "Service Account email for GKE nodes"
+  value       = google_service_account.gke_nodes.email
+}

@@ -43,3 +43,8 @@ variable "monitoring_secrets_gcp_sa_email" {
   description = "GCP Service Account email used by External Secrets Operator via Workload Identity to access Secret Manager (Secret Accessor)."
   type        = string
 }
+
+variable "external_secrets_gcp_sa_email" {
+  description = "GCP Service Account email used by External Secrets Operator via Workload Identity to access Secret Manager."
+  type        = string
+}

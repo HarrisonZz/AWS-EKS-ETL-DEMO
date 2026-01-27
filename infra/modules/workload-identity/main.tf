@@ -35,24 +35,3 @@ resource "google_service_account_iam_member" "wi_bind" {
   role               = "roles/iam.workloadIdentityUser"
   member             = "serviceAccount:${var.project_id}.svc.id.goog[${var.namespace}/${var.ksa_name}]"
 }
-
-# 1) 給 monitoring namespace 的 secrets reader 用的 GCP SA
-resource "google_service_account" "monitoring_secrets_reader" {
-  account_id   = "${var.project_id}-monitoring-secrets-reader"
-  display_name = "Monitoring Secrets Reader"
-}
-
-# 2) 只允許讀特定 secret（比給整個 project 更小權限）
-resource "google_secret_manager_secret_iam_member" "grafana_admin_reader" {
-  project   = var.project_id
-  secret_id = "grafana-admin" # 你在 GSM 的 secret 名稱
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.monitoring_secrets_reader.email}"
-}
-
-# 3) Workload Identity：允許 KSA 冒用這個 GCP SA
-resource "google_service_account_iam_member" "grafana_wi_binding" {
-  service_account_id = google_service_account.monitoring_secrets_reader.name
-  role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:${var.project_id}.svc.id.goog[monitoring/monitoring-secrets-sa]"
-}
